@@ -1,5 +1,4 @@
 import serial
-from datetime import datetime
 
 # def get_data(amonunt):
 while True: #Loop para a conexão com o Arduino
@@ -12,14 +11,9 @@ while True: #Loop para a conexão com o Arduino
 
 while True: #Loop principal
     msg = str(arduino.readline()) #Lê os dados em formato de string
-    now = datetime.now()
-    timestamp = now.timestamp()
-    current_time = now.strftime("%H:%M:%S")
     msg = msg[2:-5] #Fatia a string
     print(msg) #Imprime a mensagem
     arq = open("dados.txt",'a') 
-    arq.write(str(timestamp)+';')
-    arq.write(current_time+';')
     arq.write(msg+'\n')
     arq.close()
     arduino.flush() #Limpa a comunicação

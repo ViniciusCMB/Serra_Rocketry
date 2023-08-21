@@ -1,34 +1,15 @@
 import numpy as npy
+import matplotlib.pyplot as plt
+from matplotlib.ticker import (AutoMinorLocator)
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import customtkinter as ctk
+import easygui
+from PIL import Image
 
-def trapezio(y, h):
-    soma_ci_1 = 0.0
-    soma_ci_2 = 0.0
-
-    for i in range(len(y)):
-        if i == 0 or i == len(y)-1:
-            soma_ci_1 += y[i]
-        else:
-            soma_ci_2 += y[i]
-
-    return (h/2)*(soma_ci_1+(2*soma_ci_2))
 
 def calc_h(f, i, n):
     return (f-i)/n
 
-def st_simp(y, h, ni, np):
-
-    y_impar = [y[i] for i in range(1, np, 2)]
-    y_par = [y[i] for i in range(2, ni, 2)]
-
-    soma_impar = 0.0
-    soma_par = 0.0
-
-    for k in range(len(y_impar)):
-        soma_impar += y_impar[k]
-
-    for k in range(len(y_par)):
-        soma_par += y_par[k]
-    return (h/3)*(y[0]+(4*soma_impar)+(2*soma_par)+y[len(y)-1])
 
 def nd_simp(y, h):
 
@@ -39,12 +20,13 @@ def nd_simp(y, h):
     for i in range(len(y)):
         if i == 0 or i == len(y)-1:
             soma_ci_1 += y[i]
-        elif i%3 == 0 and i!=0 and i!=len(y)-1:
+        elif i % 3 == 0 and i != 0 and i != len(y)-1:
             soma_ci_2 += y[i]
         else:
             soma_ci_3 += y[i]
 
     return (3*h/8)*(soma_ci_1+(2*soma_ci_2)+(3*soma_ci_3))
+
 
 def spline(xi, yi):
     n = len(xi)
@@ -55,7 +37,7 @@ def spline(xi, yi):
     for i in range(1, n-1):
         linha = npy.zeros(n)
         linha[i-1] = h[i-1]
-        linha[i] = 2* (h[i-1] + h[i])
+        linha[i] = 2 * (h[i-1] + h[i])
         linha[i+1] = h[i]
         A.append(linha)
     A.append([0]*(n-1)+[1])
@@ -66,8 +48,8 @@ def spline(xi, yi):
         B.append(linha)
     B.append(0)
 
-    c = dict(zip(range(n), npy.linalg.solve(A,B)))
-    
+    c = dict(zip(range(n), npy.linalg.solve(A, B)))
+
     b = {}
     d = {}
     for k in range(n-1):
@@ -77,70 +59,88 @@ def spline(xi, yi):
     s = {}
     for k in range(n-1):
         eq = f'{a[k]}{b[k]:+}*(x{-xi[k]:+}){c[k]:+}*(x{-xi[k]:+})**2{d[k]:+}*(x{-xi[k]:+})**3'
-        s[k] = {'eq': eq,'dominio':[xi[k], xi[k+1]]}
-    
+        s[k] = {'eq': eq, 'dominio': [xi[k], xi[k+1]]}
+
     return s
 
-def calc_integral():
-    list_result['integ1'] = trapezio(yi, calc_h(xi[len(xi)-1], xi[0], len(xi)-1))
-    list_result['integ2'] = st_simp(yi, calc_h(xi[len(xi)-1], xi[0], len(xi)-1), (len(xi)-1), len(xi))
-    list_result['integ3'] = nd_simp(yi, calc_h(xi[len(xi)-1], xi[0], len(xi)-1))
 
-    print('Integral método Trapézios compostos = {:.4f}'.format(list_result['integ1'])+'N*s')
-    print('Integral método 1ª Regra de Simpson composta = {:.4f}'.format(list_result['integ2'])+'N*s')
-    print('Integral método 2ª Regra de Simpson composta = {:.4f}'.format(list_result['integ3'])+'N*s')
-    list_result['media'] = (list_result['integ1']+list_result['integ2']+list_result['integ3'])/3
-    print('Média: {:.4f}'.format(list_result['media'])+'N*s')
-    list_result['medioE'] = (1/(xi[len(xi)-1]-xi[0]))*list_result['media']
-    print('\nEmpuxo médio: {:.4f}'.format(list_result['medioE'])+'N')
+def calc_integral():
+
+    list_result['integral'] = nd_simp(
+        yi, calc_h(xi[len(xi)-1], xi[0], len(xi)-1))
+
+    # print('Integral método 2ª Regra de Simpson composta = {:.4f}'.format(list_result['integral'])+'N*s')
+
+    list_result['medioE'] = (1/(xi[len(xi)-1]-xi[0]))*list_result['integral']
+    # print('\nEmpuxo médio: {:.4f}'.format(list_result['medioE'])+'N')
     return None
 
+
 def graph():
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import (AutoMinorLocator)
+
+    def save(file):
+        f = open(file+'_'+list_result['inicio'], "a")
+        f.write('Impulso Total (N*s) ≈ {:.4f}'.format(list_result['integral']) +
+                '\nEmpuxo médio (N) ≈ {:.4f}'.format(list_result['medioE']) +
+                '\nEmpuxo máximo (N) ≈ {:.4f}'.format(list_result['maxyE'])+', em t={:.4f}'.format(list_result['maxxE']) +
+                '\nQuantidade de pontos: '+list_result['pontos'] +
+                '\nTempo de queima (s) ≈ {:.3f}'.format(list_result['duracao']) +
+                '\nHorário do teste: '+list_result['inicio'])
+        f.close()
+        plt.savefig(file+'_'+list_result['inicio']+'.png')
+        return None
     
+    def open_matplot():
+
+        return plt.show()
+    
+    def save_path():
+
+        return easygui.filesavebox()
+
     sn = spline(xi, yi)
 
-    plt.rcParams["figure.figsize"] = (12,8)
+    plt.rcParams["figure.figsize"] = (8, 6)
     fig, ax1 = plt.subplots()
-    
-    ax1.set_title("Gráfico Empuxo vs Tempo", fontsize=15)
+
+    ax1.set_title('Gráfico Empuxo vs Tempo ' +
+                  list_result['inicio'], fontsize=15)
     ax1.grid()
     max_x = 0.0
     max_y = 0.0
     for key, value in sn.items():
         def p(x):
             return eval(value['eq'])
-        t = npy.linspace(*value['dominio'],100)
+        t = npy.linspace(*value['dominio'], 100)
         for i in range(len(t)-1):
-                temp = p(t[i])
-                if max_y < temp:
-                    max_x = t[i]
-                    list_result['maxxE'] = max_x
-                    max_y = p(t[i])
-                    list_result['maxyE'] = max_y
+            temp = p(t[i])
+            if max_y < temp:
+                max_x = t[i]
+                list_result['maxxE'] = max_x
+                max_y = p(t[i])
+                list_result['maxyE'] = max_y
         linha, = ax1.plot(t, p(t), c='red')
 
     linha.set_label('Interpolação')
 
-    print('Empuxo máximo: {:.4f}'.format(list_result['maxyE'])+'N, em t={:.4f}'.format(list_result['maxxE']))
+    # print('Empuxo máximo: {:.4f}'.format(list_result['maxyE'])+'N, em t={:.4f}'.format(list_result['maxxE']))
     ax1.scatter(max_x, max_y, c='purple', label='Máximo')
     ym = [(list_result['medioE'])]*(len(xi))
     ax1.plot(xi, ym, c='green', label='Empuxo médio')
 
-    r = input('\nDeseja buscar um valor específico no tempo?\n"S" para sim e "N" para não\nResposta: ')
-    if r == 'S' or r == 's':
-        a = float(input(f'Informe o instante desejado no intervalo [{min(xi)},{max(xi)}]: '))
-        for key, value in sn.items():
-            def p(x):
-                return eval(value['eq'])
-            t = npy.linspace(*value['dominio'],100)
-            for i in range(len(t)-1):
-                if a > t[i] and a < t[i+1]:
-                    tx = p(a)
-                    print(f'O Empuxo estimado é {tx:.4f}N no instante t={a}')
-                    plt.scatter(a, tx, c='blue', label='Interesse')
-                    break
+    # r = input('\nDeseja buscar um valor específico no tempo?\n"S" para sim e "N" para não\nResposta: ')
+    # if r == 'S' or r == 's':
+    #     a = float(input(f'Informe o instante desejado no intervalo [{min(xi)},{max(xi)}]: '))
+    #     for key, value in sn.items():
+    #         def p(x):
+    #             return eval(value['eq'])
+    #         t = npy.linspace(*value['dominio'],100)
+    #         for i in range(len(t)-1):
+    #             if a > t[i] and a < t[i+1]:
+    #                 tx = p(a)
+    #                 print(f'O Empuxo estimado é {tx:.4f}N no instante t={a}')
+    #                 plt.scatter(a, tx, c='blue', label='Interesse')
+    #                 break
 
     # ax1.plot(xi, yi, c='blue', label=None)
     ax1.scatter(xi, yi, c='black', label='Pontos')
@@ -148,220 +148,83 @@ def graph():
     ax1.set_ylabel('Empuxo (N)', fontsize=12)
     # ax1.set_xticks(xi, h, rotation=45)
     ax1.set_xlabel('Tempo (s)', fontsize=12)
-    ax1.text(max(xi), max(yi), r'Impulso Total (N*s) ≈ {:.4f}'.format(list_result['media'])+'\nEmpuxo médio (N) ≈ {:.4f}'.format(list_result['medioE'])+'\nEmpuxo máximo (N) ≈ {:.4f}'.format(list_result['maxyE']), horizontalalignment='right', verticalalignment='top', fontsize=10)
+    # ax1.text(max(xi), max(yi), r'Impulso Total (N*s) ≈ {:.4f}'.format(list_result['integral'])+'\nEmpuxo médio (N) ≈ {:.4f}'.format(list_result['medioE'])+'\nEmpuxo máximo (N) ≈ {:.4f}'.format(list_result['maxyE']), horizontalalignment='right', verticalalignment='top', fontsize=10)
     ax1.yaxis.set_minor_formatter('{x:.3f}')
     ax1.yaxis.set_major_formatter('{x:.2f}')
     ax1.yaxis.set_minor_locator(AutoMinorLocator())
     ax1.tick_params(which='both', width=2)
     ax1.tick_params(which='major', length=7)
     ax1.tick_params(which='minor', length=4, color='gray')
-    ax1.legend(loc='lower right')
+    ax1.legend()
 
-    return plt.show()
+    ctk.set_appearance_mode("dark")
+    root = ctk.CTk()
+    root.title("Painel de Análise")
+    root.maxsize(1400,  900)
 
-# y = [
-# 0.007,
-# 0.007,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.008,
-# 0.018,
-# 0.030,
-# 0.073,
-# 0.092,
-# 0.088,
-# 0.094,
-# 0.034,
-# 0.009,
-# 0.006,
-# 0.007,
-# 0.008,
-# 0.009,
-# 0.010,
-# 0.010,
-# 0.011,
-# 0.011,
-# 0.011,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.011,
-# 0.012,
-# 0.011,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.013,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.011,
-# 0.011,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.011,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.012,
-# 0.012,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.014,
-# 0.014,
-# 0.014,
-# 0.014,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.012,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.014,
-# 0.014,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.014,
-# 0.014,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.014,
-# 0.014,
-# 0.014,
-# 0.014,
-# 0.013,
-# 0.014,
-# 0.013,
-# 0.012,
-# 0.012,
-# 0.012,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.013,
-# 0.026,
-# 0.014,
-# 0.026,
-# 0.016,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.007,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.007,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006,
-# 0.006]
+    Frame = ctk.CTkFrame(master=root,  width=1200,  height=800,
+                         fg_color='#8989b8', corner_radius=0)
+    Frame.pack(fill='both',  padx=5,  pady=5,  expand=True)
 
-# y = [0.01, 0.01, 0.01, 0.01, 0.01, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.011, 0.012, 0.012, 0.012, 0.011, 0.011, 0.012, 0.012, 0.012, 0.012, 0.012, 0.011, 0.012, 0.012, 0.012, 0.012, 0.012, 0.012, 0.012, 0.013, 0.013, 0.013, 0.013, 0.013, 0.013, 0.013, 0.013, 0.013, 0.013, 0.014, 0.014, 0.014, 0.014, 0.014, 0.013, 0.014, 0.014, 0.015, 0.015, 0.016, 0.016, 0.016, 0.016, 0.016, 0.016, 0.017, 0.017, 0.017, 0.017, 0.017, 0.017, 0.017, 0.017, 0.017, 0.018, 0.018, 0.018, 0.019, 0.019, 0.019, 0.019, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.021, 0.021, 0.021, 0.022, 0.022, 0.022, 0.022, 0.022, 0.023, 0.023, 0.023, 0.023, 0.023, 0.023, 0.024, 0.023, 0.024, 0.024, 0.024, 0.024, 0.024, 0.024, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.026, 0.026, 0.026, 0.026, 0.026, 0.026, 0.026, 0.027, 0.027, 0.027, 0.027, 0.027, 0.027, 0.027, 0.027, 0.028, 0.028, 0.028, 0.028, 0.028, 0.028, 0.029, 0.029, 0.029, 0.029, 0.029, 0.029, 0.029, 0.03, 0.03, 0.03, 0.029, 0.029, 0.029, 0.029, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.031, 0.031, 0.031, 0.031, 0.031, 0.031, 0.032, 0.031, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.033, 0.033, 0.033, 0.033, 0.033, 0.034, 0.034, 0.034, 0.034, 0.033, 0.033, 0.033, 0.033, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.033, 0.033, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.031, 0.031, 0.031, 0.031, 0.031, 0.031, 0.031, 0.03, 0.03, 0.031, 0.031, 0.031, 0.031, 0.031, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.031, 0.031, 0.031, 0.031, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.031, 0.031, 0.032, 0.031, 0.032, 0.032, 0.032, 0.032, 0.032, 0.032, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.034, 0.034, 0.033, 0.033, 0.034, 0.033, 0.034, 0.034, 0.034, 0.034, 0.035, 0.035, 0.035, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.037, 0.037, 0.037, 0.037, 0.037, 0.037, 0.036, 0.036, 0.037, 0.037, 0.038, 0.038, 0.038, 0.039, 0.039, 0.039, 0.039, 0.038, 0.039, 0.039, 0.039, 0.039, 0.039, 0.039, 0.04, 0.04, 0.04, 0.04, 0.039, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.039, 0.039, 0.04, 0.039, 0.04, 0.04, 0.04, 0.04, 0.041, 0.041, 0.041, 0.041, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.043, 0.043, 0.043, 0.042, 0.043, 0.044, 0.044, 0.044, 0.045, 0.045, 0.045, 0.045, 0.045, 0.046, 0.046, 0.047, 0.046, 0.047, 0.046, 0.047, 0.046, 0.047, 0.047, 0.048, 0.047, 0.047, 0.048, 0.049, 0.049, 0.05, 0.05, 0.05, 0.05, 0.049, 0.049, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.047, 0.047, 0.047, 0.047, 0.047, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.045, 0.045, 0.045, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.045, 0.045, 0.045, 0.045, 0.045, 0.044, 0.045, 0.044, 0.044, 0.045, 0.045, 0.045, 0.045, 0.045, 0.045, 0.045, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.045, 0.045, 0.045, 0.045, 0.045, 0.045, 0.045, 0.045, 0.045, 0.046, 0.045, 0.045, 0.045, 0.045, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.047, 0.047, 0.047, 0.047, 0.047, 0.047, 0.046, 0.046, 0.046, 0.046, 0.046, 0.045, 0.045, 0.046, 0.045, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.047, 0.047, 0.047, 0.047, 0.047, 0.048, 0.048, 0.048, 0.048, 0.047, 0.047, 0.047, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.047, 0.046, 0.047, 0.047, 0.047, 0.047, 0.048, 0.048, 0.048, 0.048, 0.048, 0.048, 0.047, 0.048, 0.048, 0.048, 0.049, 0.048, 0.047, 0.047, 0.047, 0.047, 0.047, 0.046, 0.047, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.046, 0.047, 0.047, 0.047, 0.047, 0.047, 0.047, 0.046, 0.046, 0.047, 0.047, 0.047, 0.046, 0.047, 0.047, 0.047, 0.047, 0.046, 0.046, 0.047, 0.047, 0.048, 0.047, 0.048, 0.048, 0.049, 0.049, 0.049, 0.049, 0.049, 0.048, 0.048, 0.048, 0.047, 0.047, 0.047, 0.047, 0.048, 0.048, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.05, 0.051, 0.051, 0.051, 0.05, 0.049, 0.048, 0.048, 0.048, 0.048, 0.048, 0.049, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.049, 0.049, 0.048, 0.048, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.05, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.049, 0.05, 0.05, 0.05, 0.051, 0.051, 0.051, 0.051, 0.051, 0.052, 0.051, 0.051, 0.051, 0.05, 0.05, 0.051, 0.05, 0.049, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.051, 0.051, 0.051, 0.051, 0.05, 0.05, 0.05, 0.051, 0.05, 0.05, 0.05, 0.05, 0.05, 0.051, 0.052, 0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.052, 0.052, 0.053, 0.053, 0.054, 0.055, 0.055, 0.055, 0.056, 0.056, 0.056, 0.056, 0.055, 0.054, 0.055, 0.055, 0.054, 0.053, 0.052, 0.052, 0.052, 0.051, 0.052, 0.053, 0.053, 0.053, 0.053, 0.052, 0.053, 0.053, 0.054, 0.054, 0.054, 0.054, 0.054, 0.054, 0.054, 0.055, 0.055, 0.056, 0.07, 0.051, 0.047, 0.046, 0.046, 0.045, 0.045, 0.045, 0.046, 0.046, 0.047, 0.048, 0.048, 0.047, 0.046, 0.047, 0.048, 0.047, 0.048, 0.059, 0.049, 0.047, 0.046, 0.045, 0.044, 0.044, 0.044, 0.044, 0.045, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.043, 0.043, 0.043, 0.043, 0.043, 0.043, 0.042, 0.042, 0.042, 0.042, 0.042, 0.041, 0.041, 0.041, 0.041, 0.041, 0.04, 0.041, 0.043, 0.041, 0.041, 0.041, 0.04, 0.039, 0.039, 0.039, 0.038, 0.038, 0.039, 0.039, 0.039, 0.039, 0.039, 0.039, 0.039, 0.039, 0.04, 0.04, 0.04, 0.04, 0.039, 0.039, 0.039, 0.039, 0.039, 0.038, 0.038, 0.038, 0.038, 0.038, 0.038, 0.038, 0.037, 0.037, 0.037, 0.037, 0.037, 0.037, 0.037, 0.037, 0.037, 0.037, 0.036, 0.036, 0.036, 0.036, 0.036, 0.035, 0.035, 0.034, 0.034, 0.033, 0.033, 0.033, 0.032, 0.032, 0.031, 0.031, 0.031, 0.031, 0.03, 0.03, 0.03, 0.03, 0.03, 0.029, 0.029, 0.029, 0.028, 0.028, 0.028, 0.028, 0.027, 0.027, 0.027, 0.027, 0.027, 0.026, 0.026, 0.026, 0.025, 0.025, 0.025, 0.025, 0.024, 0.024, 0.024, 0.024, 0.023, 0.023, 0.023, 0.023, 0.023, 0.022, 0.022, 0.022, 0.022, 0.022, 0.022, 0.022, 0.022, 0.022, 0.022, 0.021, 0.021, 0.021, 0.021, 0.021, 0.021, 0.021, 0.021, 0.021, 0.021, 0.021, 0.02, 0.02, 0.02, 0.019, 0.019, 0.018, 0.018, 0.017, 0.017, 0.017, 0.016, 0.016, 0.016, 0.015, 0.015, 0.015, 0.015, 0.015, 0.014, 0.014, 0.013, 0.013, 0.013, 0.013, 0.013, 0.012, 0.012, 0.012, 0.012, 0.011, 0.011, 0.011, 0.01, 0.01, 0.009, 0.009, 0.009, 0.009, 0.008, 0.008, 0.007, 0.007, 0.006, 0.006, 0.005, 0.005, 0.004, 0.004, 0.003, 0.003, 0.003, 0.002, 0.002, 0.001, 0.001, 0.0]
-# yi = [y[i]*9.81 for i in range(len(y))]
+    plotframe = ctk.CTkFrame(master=Frame, width=800,
+                             height=600, fg_color='#656693', corner_radius=5)
+    plotframe.pack(padx=5, pady=15, side='left')
+    canvas = FigureCanvasTkAgg(fig, master=plotframe)
+    canvas.draw()
+    canvas.get_tk_widget().place(relx=0, rely=0)
 
-# Para uso com documentos de texto, com conteudo no formato "xx;yy"
+    infos = ctk.CTkLabel(master=Frame, text='Impulso Total (N*s) ≈ {:.4f}'.format(list_result['integral']) +
+                         '\nEmpuxo médio (N) ≈ {:.4f}'.format(list_result['medioE']) +
+                         '\nEmpuxo máximo (N) ≈ {:.4f}'.format(list_result['maxyE']) +
+                         '\nQuantidade de pontos: '+list_result['pontos'] +
+                         '\nTempo de queima (s) ≈ {:.3f}'.format(list_result['duracao']) +
+                         '\nHorário do teste: '+list_result['inicio'],
+                         fg_color='#656693',
+                         text_color='white',
+                         corner_radius=5,
+                         height=200,
+                         width=400,
+                         font=('Roboto', 20, 'bold'))
+    infos.pack(padx=5, pady=10, side='top')
+
+    save_btn = ctk.CTkButton(master=Frame, corner_radius=10, height=50, width=150, font=('Roboto', 15), fg_color='#7777a6',
+                             hover_color='#acabdd', border_color='black', border_width=2, text='Salvar análise', command=lambda: [save(save_path())])
+    save_btn.pack(padx=5, pady=10, side='top')
+
+    matplot_btn = ctk.CTkButton(master=Frame, corner_radius=10, height=50, width=150, font=('Roboto', 15), fg_color='#7777a6',
+                             hover_color='#acabdd', border_color='black', border_width=2, text='Abrir Matplotlib', command=lambda: [open_matplot()])
+    matplot_btn.pack(padx=5, pady=10, side='top')
+
+    your_image = ctk.CTkImage(light_image=Image.open('Analise de dados estaticos/Comunicacao Serial/LOGO - ALTERNATIVA.png'), size=(250, 250))
+    label = ctk.CTkLabel(master=Frame, image=your_image, text='')
+    label.pack(padx=5, pady=5, side='bottom')
+
+
+    root.update()
+
+    return root.mainloop()
+
+
+def select():
+
+    return easygui.fileopenbox()
+
 yi = []
-xi = []
+xii = []
 h = []
-arq = open("dados.txt", 'r').read()
+arq = open(select(), 'r').read()
 lines = arq.split('\n')
 for line in lines:
     if len(line) > 1:
         z, x, y = line.split(';')
-        h.append(x)
-        yi.append(float(y))
-        xi.append(float(z))
+        h.append(z)
+        yi.append(float(x)*9.81)
+        xii.append(float(y)/1000)
 
-# x = npy.linspace(0, len(yi), len(yi))
-# xi = [x[i]/10 for i in range(len(x))]
+xi = [xii[i]-xii[0] for i in range(len(xii))]
 
-list_result = {'integ1': 0.0, 'integ2': 0.0, 'integ3': 0.0, 'media': 0.0, 'maxxE': 0.0, 'maxyE': 0.0, 'medioE': 0.0}
+list_result = {'integral': 0.0, 'maxxE': 0.0, 'maxyE': 0.0, 'medioE': 0.0,
+               'pontos': str(len(yi)), 'duracao': xi[len(xi)-1]-xi[0], 'inicio': h[0]}
 
-# def all():
 calc_integral()
 graph()
-    # return None
