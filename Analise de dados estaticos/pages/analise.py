@@ -1,4 +1,6 @@
+from flask.scaffold import F
 import pandas as pd
+import numpy as np
 from fpdf import FPDF
 import plotly.graph_objects as go
 # import plotly.io as pio
@@ -10,7 +12,8 @@ import base64
 import io
 
 
-dash.register_page(__name__, name="Análise de Teste Estático", path="/analise_teste_estatico")
+dash.register_page(__name__, name="Análise de Teste Estático",
+                   path="/analise_teste_estatico")
 
 
 def nd_simp(y, h):
@@ -82,6 +85,42 @@ def classe(total, medio, tempo):
         return designation
 
     return f"{designation}{medio:.1f} - {tempo:.1f}"
+
+
+def spline(xi, yi):
+    n = len(xi)
+    a = {k: v for k, v in enumerate(yi)}
+    h = {k: xi[k+1]-xi[k] for k in range(n-1)}
+
+    A = [[1]+[0]*(n-1)]
+    for i in range(1, n-1):
+        linha = np.zeros(n)
+        linha[i-1] = h[i-1]
+        linha[i] = 2 * (h[i-1] + h[i])
+        linha[i+1] = h[i]
+        A.append(linha)
+    A.append([0]*(n-1)+[1])
+
+    B = [0]
+    for k in range(1, n-1):
+        linha = 3 * (a[k+1]-a[k])/h[k] - 3 * (a[k] - a[k-1])/h[k-1]
+        B.append(linha)
+    B.append(0)
+
+    c = dict(zip(range(n), np.linalg.solve(A, B)))
+
+    b = {}
+    d = {}
+    for k in range(n-1):
+        b[k] = (1/h[k])*(a[k+1]-a[k])-((h[k]/3)*(2*c[k]+c[k+1]))
+        d[k] = (c[k+1]-c[k])/(3*h[k])
+
+    s = {}
+    for k in range(n-1):
+        eq = f'{a[k]}{b[k]:+}*(x{-xi[k]:+}){c[k]:+}*(x{-xi[k]:+})**2{d[k]:+}*(x{-xi[k]:+})**3'
+        s[k] = {'eq': eq, 'dominio': [xi[k], xi[k+1]]}
+
+    return s
 
 
 def save(file, ndf, fig):
@@ -244,11 +283,29 @@ def update_graph(input_data, input_data2):
             max_y = temp
             df_result.at[2, 'Valor'] = max_y
 
+    # sn = spline(ndf['Tempo de Queima'], ndf['Força'])
+    # t = []
+    # pt = []
+    # for key, value in sn.items():
+    #     def p(x):
+    #         return eval(value['eq'])
+    #     tx = np.linspace(*value['dominio'], 100)
+    #     t.extend(tx)
+    #     ptx = [p(x) for x in tx]
+    #     pt.extend(ptx)
+
     fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
     fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers+lines', name='Empuxo',
                              marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
+
     fig['layout'].update(height=600, width=800,
-                         xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5))
+                         xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5), legend=dict(
+                             orientation="h",
+                             yanchor="bottom",
+                             y=1.02,
+                             xanchor="right",
+                             x=1))
 
     result = html.Div([html.Div([html.H3('Resultados:'),
                                  html.H4(children='Data do teste: {}'.format(

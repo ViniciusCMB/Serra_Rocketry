@@ -7,6 +7,7 @@ def create_navbar():
                                   'flex': 'auto', 'margin-left': '10px'}),
                           html.Nav([html.A('Home', href='/'),
                                     html.A('Real time', href='/real_time'),
+                                    html.A('Ignitor', href='/ignitor'),
                                     html.A('Analise de teste estático', href='/analise_teste_estatico'),
                                     html.A('Analise de voo', href='/analise_voo')], style={'display': 'flex', 'margin-right': '15px'})
                              

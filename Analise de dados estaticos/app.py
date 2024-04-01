@@ -215,9 +215,9 @@ app.layout = html.Div(
 
 
 def open_browser():
-    webbrowser.open_new("http://localhost:{}/".format(8050))
+    webbrowser.open_new("http://localhost:8050/")
 
 
 if __name__ == '__main__':
     Timer(1, open_browser).start()
-    app.run(debug=False, port=8050)
+    app.run(debug=False, port=8050, host='0.0.0.0')
