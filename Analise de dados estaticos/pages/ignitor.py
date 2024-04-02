@@ -1,3 +1,4 @@
+from ast import In
 import dash
 from dash import Dash, dcc, html, Input, Output, callback
 import requests
@@ -5,16 +6,11 @@ import requests
 dash.register_page(__name__, name="Ignitor", path="/ignitor")
 
 layout = html.Div([
-    dcc.Dropdown(
-        id='led-control',
-        options=[
-            {'label': 'Ligado', 'value': 'on'},
-            {'label': 'Desligado', 'value': 'off'},
-        ],
-        value='off',
-        clearable=False
-    ),
-    html.H1(id='led-status')
+    html.H1('Controle do Ignitor'),
+    html.Div([html.Div(id='led-status'),
+              html.Button('Iniciar', id='led-control', value='on', className='button'),
+              html.Button('Cancelar', id='led-control', value='off', className='button'),
+    ])
 ], className='card')
 
 
@@ -23,12 +19,19 @@ layout = html.Div([
     [Input('led-control', 'value')]
 )
 def update_led_status(estado):
-    # Simulação de controle do LED
     if estado == 'on':
-        # Envie sinal para ligar o LED
-        requests.post('http://192.168.1.160/on')
-        return 'LED aceso!'
+        return html.Div([html.H2(id='contagem'),
+                         dcc.Interval(
+                                id='interval-component',
+                                interval=1*1000,  # in milliseconds
+                                n_intervals=10)])
     elif estado == 'off':
-        # Envie sinal para desligar o LED
-        requests.post('http://192.168.1.160/off')
-        return 'LED apagado!'
+        requests.post('http://192.168.0.57/off')
+        return False
+
+@callback(Output('contagem', 'children'),Input('interval-component', 'n_intervals'))
+def update_graph_live(n):
+    if n == 10:
+        requests.post('http://192.168.0.57/on')
+        return 'Ignitor ligado!'
+    return f'Contagem regressiva: {10-n}'
