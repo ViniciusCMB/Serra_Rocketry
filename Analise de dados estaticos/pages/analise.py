@@ -1,4 +1,3 @@
-from flask.scaffold import F
 import pandas as pd
 import numpy as np
 from fpdf import FPDF
@@ -270,8 +269,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 )
 def update_graph(input_data, input_data2):
     ndf = df_dados[input_data:input_data2]
-    ndf['Tempo de Queima'] = ndf['Tempo Bruto'] - \
-        ndf.at[input_data, 'Tempo Bruto']
+    ndf['Tempo de Queima'] = ndf['Tempo Bruto'] - ndf.at[input_data, 'Tempo Bruto']
     calc_integral(ndf['Tempo de Queima'], ndf['Força'])
     max_x = 0.0
     max_y = 0.0
