@@ -303,7 +303,7 @@ def update_graph(input_data, input_data2):
 
     # Criando o gráfico com os dados de tempo de queima e empuxo
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
+    # fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
     fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers', name='Empuxo',
                              marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
 
