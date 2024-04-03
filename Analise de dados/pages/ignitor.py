@@ -5,3 +5,4 @@ import requests
 dash.register_page(__name__, name="Ignitor",
                    path="/ignitor")
 
+layout = html.Div()

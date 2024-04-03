@@ -1,11 +1,16 @@
-import dash
-from dash import Dash, html
-from threading import Timer
-import webbrowser
-from navbar import create_navbar
+from navbar import create_navbar  
+import webbrowser  
+from threading import Timer  
+from dash import Dash, html  
+import dash  
 
+# Cria uma instância do app Dash
 app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
+#  * __name__ - refere-se ao nome do módulo Python atual
+#  * use_pages=True - habilita suporte para uso de várias páginas
+#  * suppress_callback_exceptions=True - suprime exceções em callbacks durante o desenvolvimento (opcional)
 
+# Define o conteúdo da página HTML servida pelo app Dash. Bom para personalizar o layout da página. 
 app.index_string = '''
 <!DOCTYPE html>
 <html>
@@ -204,20 +209,29 @@ app.index_string = '''
 </html>
 '''
 
+# Cria o componente da barra de navegação
 NAVBAR = create_navbar()
 
+# Define o layout do aplicativo
 app.layout = html.Div(
     [
-        NAVBAR,
-        dash.page_container
+        NAVBAR,  # Inclui o componente da barra de navegação no layout
+        dash.page_container  # Adiciona o container de página para conteúdo dinâmico (proveniente das páginas extras)
     ]
 )
 
-
+# Função para abrir o navegador web automaticamente
 def open_browser():
     webbrowser.open_new("http://localhost:8050/")
 
-
+# Executa o aplicativo somente quando executado como o script principal
 if __name__ == '__main__':
+    # Agenda a abertura do navegador após 1 segundo usando Timer
     Timer(1, open_browser).start()
+
+    # Executa o aplicativo Dash em modo de produção (debug=False)
+    #  * debug=False - desativa o modo de depuração
+    #  * debug=True - ativa o modo de depuração (útil para desenvolvimento)
+    #  * port=8050 - define a porta para o aplicativo Dash
+    #  * host='0.0.0.0' - permite conexões de qualquer máquina na rede
     app.run(debug=False, port=8050, host='0.0.0.0')
