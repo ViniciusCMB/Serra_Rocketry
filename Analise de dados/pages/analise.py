@@ -50,7 +50,7 @@ def calc_integral(x, y):
 
 # Esta função atribui um código de classificação com base no valor da integral, empuxo médio e tempo de queima
 def classe(total, medio, tempo):
-    if total <= 0.0625:
+    if total <= 0.625:
         designation = '1/4A'
     elif total > 0.625 and total <= 1.25:
         designation = '1/2A'
@@ -194,195 +194,218 @@ layout = html.Div([html.Div(dcc.Upload(id='upload-data', children=html.Button(ch
                    html.Div(id='output-data-upload'),
                    ])
 
-# Esta função é responsável por processar o arquivo de dados e exibir o gráfico e os resultados (apenas arquivos .txt são aceitos)
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(',')
+# # Esta função é responsável por processar o arquivo de dados e exibir o gráfico e os resultados (apenas arquivos .txt são aceitos)
+# def parse_contents(contents, filename, date):
+#     content_type, content_string = contents.split(',')
 
-    decoded = base64.b64decode(content_string)
+#     decoded = base64.b64decode(content_string)
 
-    if 'txt' in filename:
-        df2 = pd.read_csv(io.StringIO(
-            decoded.decode('utf-8')), sep='\t', header=None)
-        df3 = df2.iloc[:, 0].str.split(';', expand=True)
-        yi2 = []
-        xii2 = []
-        data2 = df3[0].tolist()
-        h2 = df3[1].tolist()
-        for i in range(len(df3[2])):
-            yi2.append((float(df3[2].iloc[i])) * 9.81)
-            xii2.append(float(df3[3].iloc[i]) / 1000)
-        dados = {'Data': data2, 'Hora': h2, 'Força': yi2,
-                 'Tempo Bruto': xii2, 'Tempo de Queima': ''}
-        # Cria um dataframe global com os dados do arquivo, mais fácil de trabalhar com os dados
-        global df_dados
-        df_dados = pd.DataFrame(dados)
-        # Essa lista é usada para criar os dropdowns de seleção de intervalo de amostras
-        list = df_dados['Força'].tolist()
+#     if 'txt' in filename:
+#         df2 = pd.read_csv(io.StringIO(
+#             decoded.decode('utf-8')), sep='\t', header=None)
+#         df3 = df2.iloc[:, 0].str.split(';', expand=True)
+#         yi2 = []
+#         xii2 = []
+#         data2 = df3[0].tolist()
+#         h2 = df3[1].tolist()
+#         for i in range(len(df3[2])):
+#             yi2.append((float(df3[2].iloc[i])) * 9.81)
+#             xii2.append(float(df3[3].iloc[i]) / 1000)
+#         dados = {'Data': data2, 'Hora': h2, 'Força': yi2,
+#                  'Tempo Bruto': xii2, 'Tempo de Queima': ''}
+#         # Cria um dataframe global com os dados do arquivo, mais fácil de trabalhar com os dados
+#         global df_dados
+#         df_dados = pd.DataFrame(dados)
+#         # Essa lista é usada para criar os dropdowns de seleção de intervalo de amostras
+#         list = df_dados['Força'].tolist()
 
-    else:
-        return html.H3('Ocorreu um erro ao processar este arquivo.', className='card', style={'color': '#FF0000', 'text-align': 'center'})
+#     else:
+#         return html.H3('Ocorreu um erro ao processar este arquivo.', className='card', style={'color': '#FF0000', 'text-align': 'center'})
 
-    current_time = time.ctime()
+#     current_time = time.ctime()
 
-    # Retorna 3 cards: informações do arquivo e intervalo de amostras, gráfico e resultados
-    return html.Div([html.Div([html.Div([html.H5(filename),
-                                         html.H5(current_time)], id='doc-info', className='card'),
-                               html.Div([html.H4('Intervalo de amostras:', style={'margin-bottom': '10px'}),
-                                         html.Div([html.Div([html.H5('Selecione o início do intervalo:', style={'margin-left': '10px'}),
-                                                             html.Div(dcc.Dropdown(id='start', style={'width': '50%', 'position': 'absolute', 'right': '30px', 'font-size': 'medium', 'background-color': '#cbcbe2'}, options=[
-                                                                 {'label': list[i], 'value': i} for i in range(len(list))], value=0, clearable=False), style={'color': 'black'})
-                                                             ], style={'display': 'flex', 'margin-bottom': '20px'}),
-                                                   html.Div([html.H5('Selecione o fim do intervalo:', style={'margin-left': '10px'}),
-                                                             html.Div(dcc.Dropdown(id='end', style={'width': '50%', 'position': 'absolute', 'right': '30px', 'font-size': 'medium', 'background-color': '#cbcbe2'}, options=[
-                                                                 {'label': list[i], 'value': i} for i in range(len(list))], value=len(list)-1, clearable=False), style={'color': 'black'})
-                                                             ], style={'display': 'flex', 'margin-bottom': '20px'})
-                                                   ])
-                                         ], id='intervalo', className='card'),
-                               ], id='info-intervalo'),
-                     html.Div([html.Div([dcc.Graph(id='graph', responsive=True),
-                                         ], className='card'),
-                               html.Div([html.Div(id='analysis'),
-                                         dcc.Input(
-                                   id='name', type='text', placeholder='Nome do teste'),
-                                   html.Div(id='notpass'),
-                                   html.Button(children=html.H3(
-                                       'Salvar análise'), id='save', n_clicks=0, className='button'),
-                                   html.Div(id='analysis-save'),
-                                   dcc.Input(
-                                   id='pass', type='hidden'),
-                               ], id='result', className='card')
-                               ], id='graph-analysis')
-                     ])
+#     # Retorna 3 cards: informações do arquivo e intervalo de amostras, gráfico e resultados
+#     return html.Div([html.Div([html.Div([html.H5(filename),
+#                                          html.H5(current_time)], id='doc-info', className='card'),
+#                                html.Div([html.H4('Intervalo de amostras:', style={'margin-bottom': '10px'}),
+#                                          html.Div([html.Div([html.H5('Selecione o início do intervalo:', style={'margin-left': '10px'}),
+#                                                              html.Div(dcc.Dropdown(id='start', style={'width': '50%', 'position': 'absolute', 'right': '30px', 'font-size': 'medium', 'background-color': '#cbcbe2'}, options=[
+#                                                                  {'label': list[i], 'value': i} for i in range(len(list))], value=0, clearable=False), style={'color': 'black'})
+#                                                              ], style={'display': 'flex', 'margin-bottom': '20px'}),
+#                                                    html.Div([html.H5('Selecione o fim do intervalo:', style={'margin-left': '10px'}),
+#                                                              html.Div(dcc.Dropdown(id='end', style={'width': '50%', 'position': 'absolute', 'right': '30px', 'font-size': 'medium', 'background-color': '#cbcbe2'}, options=[
+#                                                                  {'label': list[i], 'value': i} for i in range(len(list))], value=len(list)-1, clearable=False), style={'color': 'black'})
+#                                                              ], style={'display': 'flex', 'margin-bottom': '20px'})
+#                                                    ])
+#                                          ], id='intervalo', className='card'),
+#                                ], id='info-intervalo'),
+#                      html.Div([html.Div([dcc.Graph(id='graph', responsive=True),
+#                                          ], className='card'),
+#                                html.Div([html.Div(id='analysis'),
+#                                          dcc.Input(
+#                                    id='name', type='text', placeholder='Nome do teste'),
+#                                    html.Div(id='notpass'),
+#                                    html.Button(children=html.H3(
+#                                        'Salvar análise'), id='save', n_clicks=0, className='button'),
+#                                    html.Div(id='analysis-save'),
+#                                    dcc.Input(
+#                                    id='pass', type='hidden'),
+#                                ], id='result', className='card')
+#                                ], id='graph-analysis')
+#                      ])
 
-# Este callback atualiza o conteúdo exibido após o upload de um arquivo
-@callback(Output('output-data-upload', 'children'),
-          Input('upload-data', 'contents'),
-          State('upload-data', 'filename'),
-          State('upload-data', 'last_modified'))
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
-        children = [
-            parse_contents(list_of_contents, list_of_names, list_of_dates)]
-        return children
+# # Este callback atualiza o conteúdo exibido após o upload de um arquivo
+# @callback(Output('output-data-upload', 'children'),
+#           Input('upload-data', 'contents'),
+#           State('upload-data', 'filename'),
+#           State('upload-data', 'last_modified'))
+# def update_output(list_of_contents, list_of_names, list_of_dates):
+#     if list_of_contents is not None:
+#         children = [
+#             parse_contents(list_of_contents, list_of_names, list_of_dates)]
+#         return children
 
-# Este callback atualiza o gráfico e a seção de análise com base no intervalo de dados selecionado
-@callback(
-    [Output(component_id='graph', component_property='figure'),
-        Output(component_id='analysis', component_property='children')],
-    [Input(component_id='start', component_property='value'),
-        Input(component_id='end', component_property='value'), ]
-)
-def update_graph(input_data, input_data2):
-    # Cria um novo dataframe com os dados do intervalo selecionado
-    ndf = df_dados[input_data:input_data2]
-    # Calcula o tempo de queima e a integral numérica
-    ndf['Tempo de Queima'] = ndf['Tempo Bruto'] - ndf.at[input_data, 'Tempo Bruto']
-    calc_integral(ndf['Tempo de Queima'], ndf['Força'])
-    # Encontra o empuxo máximo e o tempo de queima aproximado do mesmo
-    max_x = 0.0
-    max_y = 0.0
-    for i in range(len(ndf)):
-        temp = ndf.at[i+input_data, 'Força']
-        if max_y < temp:
-            max_x = ndf.at[i+input_data, 'Tempo de Queima']
-            df_result.at[1, 'Valor'] = max_x
-            max_y = temp
-            df_result.at[2, 'Valor'] = max_y
+# # Este callback atualiza o gráfico e a seção de análise com base no intervalo de dados selecionado
+# @callback(
+#     [Output(component_id='graph', component_property='figure'),
+#         Output(component_id='analysis', component_property='children')],
+#     [Input(component_id='start', component_property='value'),
+#         Input(component_id='end', component_property='value'), ]
+# )
+# def update_graph(input_data, input_data2):
+#     # Cria um novo dataframe com os dados do intervalo selecionado
+#     ndf2 = df_dados[input_data:input_data2]
+#     ndf2['Tempo de Queima'] = ndf2['Tempo Bruto'] - ndf2.at[input_data, 'Tempo Bruto']
 
-    # Interpolação spline (ainda não implementada corretamente, não atualiza a interpolação com o intervalo selecionado)
-    # sn = spline(ndf['Tempo de Queima'], ndf['Força'])
-    # t = []
-    # pt = []
-    # for key, value in sn.items():
-    #     def p(x):
-    #         return eval(value['eq'])
-    #     tx = np.linspace(*value['dominio'], 100)
-    #     t.extend(tx)
-    #     ptx = [p(x) for x in tx]
-    #     pt.extend(ptx)
+#     # Calcula o tempo de queima e a integral numérica
+#     ndf = ndf2.reset_index(drop=True)
+#     calc_integral(ndf['Tempo de Queima'], ndf['Força'])
 
-    # Criando o gráfico com os dados de tempo de queima e empuxo
-    fig = go.Figure()
-    # fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
-    fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers', name='Empuxo',
-                             marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
+#     # Interpolação spline (ainda não implementada corretamente, não atualiza a interpolação com o intervalo selecionado)
+#     sn = spline(ndf['Tempo de Queima'], ndf['Força'])
+#     t = []
+#     pt = []
+#     for key, value in sn.items():
+#         def p(x):
+#             return eval(value['eq'])
+#         tx = np.linspace(*value['dominio'], 100)
+#         t.extend(tx)
+#         ptx = [p(x) for x in tx]
+#         pt.extend(ptx)
+    
+#     # Encontra o empuxo máximo e o tempo de queima aproximado do mesmo
+#     df_result.at[2, 'Valor'] = max(pt)
+#     df_result.at[1, 'Valor'] = t[pt.index(max(pt))]
 
-    fig['layout'].update(height=600, width=800,
-                         xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5), legend=dict(
-                             orientation="h",
-                             yanchor="bottom",
-                             y=1.02,
-                             xanchor="right",
-                             x=1))
+#     # Criando o gráfico com os dados de tempo de queima e empuxo
+#     fig = go.Figure()
+#     fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
+#     fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers', name='Empuxo',
+#                              marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
 
-    # Criando a seção de análise com os resultados
-    result = html.Div([html.Div([html.H3('Resultados:'),
-                                 html.H4(children='Data do teste: {}'.format(
-                                     df_dados.at[0, 'Data'])),
-                                 html.H4(children='Horário do teste: {}'.format(
-                                     df_dados.at[0, 'Hora'])),
-                                 html.H4(
-        children='Impulso Total (N*s) ≈ {:.3f}'.format(df_result.at[0, 'Valor'])),
-        html.H4(children='Empuxo médio (N) ≈ {:.3f}'.format(
-            df_result.at[3, 'Valor'])),
-        html.H4(children='Empuxo máximo (N) ≈ {:.3f}'.format(
-            df_result.at[2, 'Valor'])),
-        html.H4(children='Tempo aproximado de queima (s) ≈ {:.1f}'.format(
-            df_result.at[5, 'Valor'])),
-        html.H3(children='Classe: {}'.format(
-            df_result.at[6, 'Valor'])),
-    ])
-    ])
+#     fig['layout'].update(height=600, width=800,
+#                          xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5), legend=dict(
+#                              orientation="h",
+#                              yanchor="bottom",
+#                              y=1.02,
+#                              xanchor="right",
+#                              x=1))
 
-    return fig, result
+#     # Criando a seção de análise com os resultados
+#     result = html.Div([html.Div([html.H3('Resultados:'),
+#                                  html.H4(children='Data do teste: {}'.format(
+#                                      df_dados.at[0, 'Data'])),
+#                                  html.H4(children='Horário do teste: {}'.format(
+#                                      df_dados.at[0, 'Hora'])),
+#                                  html.H4(
+#         children='Impulso Total (N*s) ≈ {:.3f}'.format(df_result.at[0, 'Valor'])),
+#         html.H4(children='Empuxo médio (N) ≈ {:.3f}'.format(
+#             df_result.at[3, 'Valor'])),
+#         html.H4(children='Empuxo máximo (N) ≈ {:.3f}'.format(
+#             df_result.at[2, 'Valor'])),
+#         html.H4(children='Tempo aproximado de queima (s) ≈ {:.1f}'.format(
+#             df_result.at[5, 'Valor'])),
+#         html.H3(children='Classe: {}'.format(
+#             df_result.at[6, 'Valor'])),
+#     ])
+#     ])
 
-# Este callback lida com o salvamento da análise e exibe um alerta se nenhum nome for fornecido
-@callback(
-    [Output(component_id='notpass', component_property='children'),
-        Output(component_id='pass', component_property='value')],
-    [Input(component_id='name', component_property='value'),
-        Input(component_id='save', component_property='n_clicks')],
-    prevent_initial_call=True
-)
-def update_name(name, n_clicks):
-    if 'save' == ctx.triggered_id:
-        # Verifica se um nome foi fornecido
-        if name is not None:
-            df_result.at[7, 'Valor'] = name
-            return None, 1
-        else:
-            alerta = html.H5('Informe um nome para o teste!!')
-            return alerta, None
-    else:
-        return None, None
+#     return fig, result
 
-# Este callback aciona o processo de salvamento do arquivo quando o botão "Salvar análise" é clicado e um nome é fornecido
-@callback(
-    Output(component_id='analysis-save', component_property='children'),
-    [Input(component_id='start', component_property='value'),
-        Input(component_id='end', component_property='value'),
-        Input(component_id='save', component_property='n_clicks'),
-        Input(component_id='pass', component_property='value'),
-        Input(component_id='name', component_property='value')],
-    prevent_initial_call=True
-)
-def download(input_data, input_data2, n_clicks, passw, nome):
-    if passw == 1:
-        if 'save' == ctx.triggered_id:
-            # Refaz o processo de análise e gráfico para poder executar a função de salvar
-            ndf = df_dados[input_data:input_data2]
-            ndf['Tempo de Queima'] = ndf['Tempo Bruto'] - \
-                ndf.at[input_data, 'Tempo Bruto']
-            calc_integral(ndf['Tempo de Queima'], ndf['Força'])
+# # Este callback lida com o salvamento da análise e exibe um alerta se nenhum nome for fornecido
+# @callback(
+#     [Output(component_id='notpass', component_property='children'),
+#         Output(component_id='pass', component_property='value')],
+#     [Input(component_id='name', component_property='value'),
+#         Input(component_id='save', component_property='n_clicks')],
+#     prevent_initial_call=True
+# )
+# def update_name(name, n_clicks):
+#     if 'save' == ctx.triggered_id:
+#         # Verifica se um nome foi fornecido
+#         if name is not None:
+#             df_result.at[7, 'Valor'] = name
+#             return None, 1
+#         else:
+#             alerta = html.H5('Informe um nome para o teste!!')
+#             return alerta, None
+#     else:
+#         return None, None
 
-            fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers+lines', name='Empuxo',
-                                      marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
-            fig2['layout'].update(height=600, width=800, title='Empuxo x Tempo de Queima',
-                                  xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5))
-            save(nome, ndf, fig2)
-            return None
-        else:
-            return None
-    else:
-        return None
+# # Este callback aciona o processo de salvamento do arquivo quando o botão "Salvar análise" é clicado e um nome é fornecido
+# @callback(
+#     Output(component_id='analysis-save', component_property='children'),
+#     [Input(component_id='start', component_property='value'),
+#         Input(component_id='end', component_property='value'),
+#         Input(component_id='save', component_property='n_clicks'),
+#         Input(component_id='pass', component_property='value'),
+#         Input(component_id='name', component_property='value')],
+#     prevent_initial_call=True
+# )
+# def download(input_data, input_data2, n_clicks, passw, nome):
+#     if passw == 1:
+#         if 'save' == ctx.triggered_id:
+#             # Cria um novo dataframe com os dados do intervalo selecionado
+#             ndf2 = df_dados[input_data:input_data2]
+#             ndf2['Tempo de Queima'] = ndf2['Tempo Bruto'] - ndf2.at[input_data, 'Tempo Bruto']
+
+#             # Calcula o tempo de queima e a integral numérica
+#             ndf = ndf2.reset_index(drop=True)
+#             calc_integral(ndf['Tempo de Queima'], ndf['Força'])
+
+#             # Interpolação spline (ainda não implementada corretamente, não atualiza a interpolação com o intervalo selecionado)
+#             sn = spline(ndf['Tempo de Queima'], ndf['Força'])
+#             t = []
+#             pt = []
+#             for key, value in sn.items():
+#                 def p(x):
+#                     return eval(value['eq'])
+#                 tx = np.linspace(*value['dominio'], 100)
+#                 t.extend(tx)
+#                 ptx = [p(x) for x in tx]
+#                 pt.extend(ptx)
+            
+#             # Encontra o empuxo máximo e o tempo de queima aproximado do mesmo
+#             df_result.at[2, 'Valor'] = max(pt)
+#             df_result.at[1, 'Valor'] = t[pt.index(max(pt))]
+
+#             # Criando o gráfico com os dados de tempo de queima e empuxo
+#             fig = go.Figure()
+#             fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
+#             fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers', name='Empuxo',
+#                                     marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
+
+#             fig['layout'].update(height=600, width=800,
+#                                 xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5), legend=dict(
+#                                     orientation="h",
+#                                     yanchor="bottom",
+#                                     y=1.02,
+#                                     xanchor="right",
+#                                     x=1))
+
+#             save(nome, ndf, fig)
+#             return None
+#         else:
+#             return None
+#     else:
+#         return None
