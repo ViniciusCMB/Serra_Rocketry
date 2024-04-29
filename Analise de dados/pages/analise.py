@@ -50,7 +50,7 @@ def calc_integral(x, y):
 
 # Esta função atribui um código de classificação com base no valor da integral, empuxo médio e tempo de queima
 def classe(total, medio, tempo):
-    if total <= 0.0625:
+    if total <= 0.625:
         designation = '1/4A'
     elif total > 0.625 and total <= 1.25:
         designation = '1/2A'
@@ -133,9 +133,9 @@ def save(file, ndf, fig):
         def header(self):
             # Logos
             self.image(
-                'Analise de dados estaticos/assets/LOGO - ALTERNATIVA.png', 210-47, -5, 50)
+                'Analise de dados/assets/LOGO - ALTERNATIVA.png', 210-47, -5, 50)
             self.image(
-                'Analise de dados estaticos/assets/logomarca-uerj-300x300.png', 2, 2, 35)
+                'Analise de dados/assets/logomarca-uerj-300x300.png', 2, 2, 35)
 
             self.set_font('Arial', 'B', 25)
             # Move to the right
@@ -210,7 +210,7 @@ def parse_contents(contents, filename, date):
         h2 = df3[1].tolist()
         for i in range(len(df3[2])):
             yi2.append((float(df3[2].iloc[i])) * 9.81)
-            xii2.append(float(df3[3].iloc[i]) / 1000)
+            xii2.append(float(df3[3].iloc[i]) / 100)
         dados = {'Data': data2, 'Hora': h2, 'Força': yi2,
                  'Tempo Bruto': xii2, 'Tempo de Queima': ''}
         # Cria um dataframe global com os dados do arquivo, mais fácil de trabalhar com os dados
@@ -274,36 +274,32 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 )
 def update_graph(input_data, input_data2):
     # Cria um novo dataframe com os dados do intervalo selecionado
-    ndf = df_dados[input_data:input_data2]
+    ndf2 = df_dados[input_data:input_data2]
+    ndf2['Tempo de Queima'] = ndf2['Tempo Bruto'] - ndf2.at[input_data, 'Tempo Bruto']
+
     # Calcula o tempo de queima e a integral numérica
-    ndf['Tempo de Queima'] = ndf['Tempo Bruto'] - ndf.at[input_data, 'Tempo Bruto']
+    ndf = ndf2.reset_index(drop=True)
     calc_integral(ndf['Tempo de Queima'], ndf['Força'])
-    # Encontra o empuxo máximo e o tempo de queima aproximado do mesmo
-    max_x = 0.0
-    max_y = 0.0
-    for i in range(len(ndf)):
-        temp = ndf.at[i+input_data, 'Força']
-        if max_y < temp:
-            max_x = ndf.at[i+input_data, 'Tempo de Queima']
-            df_result.at[1, 'Valor'] = max_x
-            max_y = temp
-            df_result.at[2, 'Valor'] = max_y
 
     # Interpolação spline (ainda não implementada corretamente, não atualiza a interpolação com o intervalo selecionado)
-    # sn = spline(ndf['Tempo de Queima'], ndf['Força'])
-    # t = []
-    # pt = []
-    # for key, value in sn.items():
-    #     def p(x):
-    #         return eval(value['eq'])
-    #     tx = np.linspace(*value['dominio'], 100)
-    #     t.extend(tx)
-    #     ptx = [p(x) for x in tx]
-    #     pt.extend(ptx)
+    sn = spline(ndf['Tempo de Queima'], ndf['Força'])
+    t = []
+    pt = []
+    for key, value in sn.items():
+        def p(x):
+            return eval(value['eq'])
+        tx = np.linspace(*value['dominio'], 100)
+        t.extend(tx)
+        ptx = [p(x) for x in tx]
+        pt.extend(ptx)
+    
+    # Encontra o empuxo máximo e o tempo de queima aproximado do mesmo
+    df_result.at[2, 'Valor'] = max(pt)
+    df_result.at[1, 'Valor'] = t[pt.index(max(pt))]
 
     # Criando o gráfico com os dados de tempo de queima e empuxo
     fig = go.Figure()
-    # fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
+    fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
     fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers', name='Empuxo',
                              marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
 
@@ -369,18 +365,45 @@ def update_name(name, n_clicks):
 def download(input_data, input_data2, n_clicks, passw, nome):
     if passw == 1:
         if 'save' == ctx.triggered_id:
-            # Refaz o processo de análise e gráfico para poder executar a função de salvar
-            ndf = df_dados[input_data:input_data2]
-            ndf['Tempo de Queima'] = ndf['Tempo Bruto'] - \
-                ndf.at[input_data, 'Tempo Bruto']
+            # Cria um novo dataframe com os dados do intervalo selecionado
+            ndf2 = df_dados[input_data:input_data2]
+            ndf2['Tempo de Queima'] = ndf2['Tempo Bruto'] - ndf2.at[input_data, 'Tempo Bruto']
+
+            # Calcula o tempo de queima e a integral numérica
+            ndf = ndf2.reset_index(drop=True)
             calc_integral(ndf['Tempo de Queima'], ndf['Força'])
 
-            fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers+lines', name='Empuxo',
-                                      marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
-            fig2['layout'].update(height=600, width=800, title='Empuxo x Tempo de Queima',
-                                  xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5))
-            save(nome, ndf, fig2)
+            # Interpolação spline (ainda não implementada corretamente, não atualiza a interpolação com o intervalo selecionado)
+            sn = spline(ndf['Tempo de Queima'], ndf['Força'])
+            t = []
+            pt = []
+            for key, value in sn.items():
+                def p(x):
+                    return eval(value['eq'])
+                tx = np.linspace(*value['dominio'], 100)
+                t.extend(tx)
+                ptx = [p(x) for x in tx]
+                pt.extend(ptx)
+            
+            # Encontra o empuxo máximo e o tempo de queima aproximado do mesmo
+            df_result.at[2, 'Valor'] = max(pt)
+            df_result.at[1, 'Valor'] = t[pt.index(max(pt))]
+
+            # Criando o gráfico com os dados de tempo de queima e empuxo
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=t, y=pt, mode='lines', name='Interpolação', line=dict(color='black', width=2)))
+            fig.add_trace(go.Scatter(x=ndf['Tempo de Queima'], y=ndf['Força'], mode='markers', name='Empuxo',
+                                    marker=dict(size=16, cmin=0, color=ndf['Força'], colorscale='turbo', colorbar=dict(title='Empuxo (N)')), line=dict(color='black', width=2)))
+
+            fig['layout'].update(height=600, width=800,
+                                xaxis_title='Tempo de Queima (s)', yaxis_title='Empuxo (N)', xaxis=dict(tickformat='.2f', dtick=0.5), legend=dict(
+                                    orientation="h",
+                                    yanchor="bottom",
+                                    y=1.02,
+                                    xanchor="right",
+                                    x=1))
+
+            save(nome, ndf, fig)
             return None
         else:
             return None

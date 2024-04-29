@@ -3,12 +3,11 @@ import webbrowser
 from threading import Timer  
 from dash import Dash, html  
 import dash  
-
+ 
 # Cria uma instância do app Dash
-app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
+app = Dash(__name__, use_pages=True)
 #  * __name__ - refere-se ao nome do módulo Python atual
 #  * use_pages=True - habilita suporte para uso de várias páginas
-#  * suppress_callback_exceptions=True - suprime exceções em callbacks durante o desenvolvimento (opcional)
 
 # Define o conteúdo da página HTML servida pelo app Dash. Bom para personalizar o layout da página. 
 app.index_string = '''
